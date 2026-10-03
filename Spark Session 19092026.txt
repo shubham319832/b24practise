@@ -1,0 +1,484 @@
+Spark - 
+
+CSV
+
+#read
+
+#Process
+	1.Pure SQL
+	2.DF API function
+
+#Write
+
+
+#Windowing Functions
+Row_Number
+Rank
+Dense_rank
+
+Lag
+Lead
+
+emp.csv
+eid,ename,did,dept,sal,hire_date
+101,Amit,10,IT,65000,2020-01-15
+102,Rohan,10,IT,72000,2021-03-10
+103,Neha,10,IT,68000,2022-06-20
+104,Priya,10,IT,72000,2023-02-12
+105,Karan,20,HR,55000,2019-07-01
+106,Swati,20,HR,60000,2021-08-15
+107,Manoj,20,HR,58000,2022-04-18
+108,Pooja,30,Finance,75000,2020-11-25
+109,Akash,30,Finance,82000,2021-01-12
+110,Sneha,30,Finance,78000,2023-05-16
+111,Vikas,40,Sales,50000,2019-09-10
+112,Anjali,40,Sales,62000,2020-12-05
+113,Rahul,40,Sales,58000,2022-07-22
+114,Meena,40,Sales,62000,2023-01-30
+115,Sachin,50,Operations,60000,2020-03-14
+116,Komal,50,Operations,65000,2021-05-19
+117,Deepak,50,Operations,70000,2022-09-11
+118,Shweta,50,Operations,70000,2023-08-21
+
+
+df=spark.read.format("CSV").option("header","true").option("inferschema","true").load("D:/tmp/emp.csv")
+
+df.show()
+
++---+------+---+----------+-----+-------------------+
+|eid| ename|did|      dept|  sal|          hire_date|
++---+------+---+----------+-----+-------------------+
+|101|  Amit| 10|        IT|65000|2020-01-15 00:00:00|
+|102| Rohan| 10|        IT|72000|2021-03-10 00:00:00|
+|103|  Neha| 10|        IT|68000|2022-06-20 00:00:00|
+|104| Priya| 10|        IT|72000|2023-02-12 00:00:00|
+|105| Karan| 20|        HR|55000|2019-07-01 00:00:00|
+|106| Swati| 20|        HR|60000|2021-08-15 00:00:00|
+|107| Manoj| 20|        HR|58000|2022-04-18 00:00:00|
+|108| Pooja| 30|   Finance|75000|2020-11-25 00:00:00|
+|109| Akash| 30|   Finance|82000|2021-01-12 00:00:00|
+|110| Sneha| 30|   Finance|78000|2023-05-16 00:00:00|
+|111| Vikas| 40|     Sales|50000|2019-09-10 00:00:00|
+|112|Anjali| 40|     Sales|62000|2020-12-05 00:00:00|
+|113| Rahul| 40|     Sales|58000|2022-07-22 00:00:00|
+|114| Meena| 40|     Sales|62000|2023-01-30 00:00:00|
+|115|Sachin| 50|Operations|60000|2020-03-14 00:00:00|
+|116| Komal| 50|Operations|65000|2021-05-19 00:00:00|
+|117|Deepak| 50|Operations|70000|2022-09-11 00:00:00|
+|118|Shweta| 50|Operations|70000|2023-08-21 00:00:00|
++---+------+---+----------+-----+-------------------+
+
+
+>>> df.printSchema()
+root
+ |-- eid: integer (nullable = true)
+ |-- ename: string (nullable = true)
+ |-- did: integer (nullable = true)
+ |-- dept: string (nullable = true)
+ |-- sal: integer (nullable = true)
+ |-- hire_date: timestamp (nullable = true)
+
+
+select *,row_number() over(partition by did order by sal) as rn from emp;
+
+from pyspark.sql.functions import *
+from pyspark.sql.window import Window
+
+win_spec=Window.partitionBy("did").orderBy("sal")
+df1=df.withColumn("rn",row_number().over(win_spec))
+df1.show()
+
++---+------+---+----------+-----+-------------------+---+
+|eid| ename|did|      dept|  sal|          hire_date| rn|
++---+------+---+----------+-----+-------------------+---+
+|105| Karan| 20|        HR|55000|2019-07-01 00:00:00|  1|
+|107| Manoj| 20|        HR|58000|2022-04-18 00:00:00|  2|
+|106| Swati| 20|        HR|60000|2021-08-15 00:00:00|  3|
+|111| Vikas| 40|     Sales|50000|2019-09-10 00:00:00|  1|
+|113| Rahul| 40|     Sales|58000|2022-07-22 00:00:00|  2|
+|112|Anjali| 40|     Sales|62000|2020-12-05 00:00:00|  3|
+|114| Meena| 40|     Sales|62000|2023-01-30 00:00:00|  4|
+|101|  Amit| 10|        IT|65000|2020-01-15 00:00:00|  1|
+|103|  Neha| 10|        IT|68000|2022-06-20 00:00:00|  2|
+|102| Rohan| 10|        IT|72000|2021-03-10 00:00:00|  3|
+|104| Priya| 10|        IT|72000|2023-02-12 00:00:00|  4|
+|115|Sachin| 50|Operations|60000|2020-03-14 00:00:00|  1|
+|116| Komal| 50|Operations|65000|2021-05-19 00:00:00|  2|
+|117|Deepak| 50|Operations|70000|2022-09-11 00:00:00|  3|
+|118|Shweta| 50|Operations|70000|2023-08-21 00:00:00|  4|
+|108| Pooja| 30|   Finance|75000|2020-11-25 00:00:00|  1|
+|110| Sneha| 30|   Finance|78000|2023-05-16 00:00:00|  2|
+
+win_spec=Window.partitionBy(lit(1)).orderBy("sal")
+
+df1=df.withColumn("rn",row_number().over(win_spec))
+
+df1.show()
+
++---+------+---+----------+-----+-------------------+---+
+|eid| ename|did|      dept|  sal|          hire_date| rn|
++---+------+---+----------+-----+-------------------+---+
+|111| Vikas| 40|     Sales|50000|2019-09-10 00:00:00|  1|
+|105| Karan| 20|        HR|55000|2019-07-01 00:00:00|  2|
+|107| Manoj| 20|        HR|58000|2022-04-18 00:00:00|  3|
+|113| Rahul| 40|     Sales|58000|2022-07-22 00:00:00|  4|
+|106| Swati| 20|        HR|60000|2021-08-15 00:00:00|  5|
+|115|Sachin| 50|Operations|60000|2020-03-14 00:00:00|  6|
+|112|Anjali| 40|     Sales|62000|2020-12-05 00:00:00|  7|
+|114| Meena| 40|     Sales|62000|2023-01-30 00:00:00|  8|
+|101|  Amit| 10|        IT|65000|2020-01-15 00:00:00|  9|
+|116| Komal| 50|Operations|65000|2021-05-19 00:00:00| 10|
+|103|  Neha| 10|        IT|68000|2022-06-20 00:00:00| 11|
+
+win_spec=Window.partitionBy(lit(1)).orderBy(desc("sal"))
+df1=df.withColumn("rn",row_number().over(win_spec))
+df1.show()
+
++---+------+---+----------+-----+-------------------+---+
+|eid| ename|did|      dept|  sal|          hire_date| rn|
++---+------+---+----------+-----+-------------------+---+
+|109| Akash| 30|   Finance|82000|2021-01-12 00:00:00|  1|
+|110| Sneha| 30|   Finance|78000|2023-05-16 00:00:00|  2|
+|108| Pooja| 30|   Finance|75000|2020-11-25 00:00:00|  3|
+|102| Rohan| 10|        IT|72000|2021-03-10 00:00:00|  4|
+|104| Priya| 10|        IT|72000|2023-02-12 00:00:00|  5|
+|117|Deepak| 50|Operations|70000|2022-09-11 00:00:00|  6|
+|118|Shweta| 50|Operations|70000|2023-08-21 00:00:00|  7|
+
+win_spec=Window.partitionBy(lit(1)).orderBy(desc("sal"))
+df1=df.withColumn("rnk",rank().over(win_spec))
+df1.show()
+
++---+------+---+----------+-----+-------------------+---+
+|eid| ename|did|      dept|  sal|          hire_date| rnk|
++---+------+---+----------+-----+-------------------+---+
+|109| Akash| 30|   Finance|82000|2021-01-12 00:00:00|  1|
+|110| Sneha| 30|   Finance|78000|2023-05-16 00:00:00|  2|
+|108| Pooja| 30|   Finance|75000|2020-11-25 00:00:00|  3|
+|102| Rohan| 10|        IT|72000|2021-03-10 00:00:00|  4|
+|104| Priya| 10|        IT|72000|2023-02-12 00:00:00|  4|
+|117|Deepak| 50|Operations|70000|2022-09-11 00:00:00|  6|
+|118|Shweta| 50|Operations|70000|2023-08-21 00:00:00|  6|
+|103|  Neha| 10|        IT|68000|2022-06-20 00:00:00|  8|
+|101|  Amit| 10|        IT|65000|2020-01-15 00:00:00|  9|
+|116| Komal| 50|Operations|65000|2021-05-19 00:00:00|  9|
+|112|Anjali| 40|     Sales|62000|2020-12-05 00:00:00| 11|
+|114| Meena| 40|     Sales|62000|2023-01-30 00:00:00| 11|
+|106| Swati| 20|        HR|60000|2021-08-15 00:00:00| 13|
+|115|Sachin| 50|Operations|60000|2020-03-14 00:00:00| 13|
+
+win_spec=Window.partitionBy(lit(1)).orderBy(desc("sal"))
+df1=df.withColumn("rnk",dense_rank().over(win_spec))
+df1.show()
+
++---+------+---+----------+-----+-------------------+---+
+|eid| ename|did|      dept|  sal|          hire_date|rnk|
++---+------+---+----------+-----+-------------------+---+
+|109| Akash| 30|   Finance|82000|2021-01-12 00:00:00|  1|
+|110| Sneha| 30|   Finance|78000|2023-05-16 00:00:00|  2|
+|108| Pooja| 30|   Finance|75000|2020-11-25 00:00:00|  3|
+|102| Rohan| 10|        IT|72000|2021-03-10 00:00:00|  4|
+|104| Priya| 10|        IT|72000|2023-02-12 00:00:00|  4|
+|117|Deepak| 50|Operations|70000|2022-09-11 00:00:00|  5|
+|118|Shweta| 50|Operations|70000|2023-08-21 00:00:00|  5|
+|103|  Neha| 10|        IT|68000|2022-06-20 00:00:00|  6|
+|101|  Amit| 10|        IT|65000|2020-01-15 00:00:00|  7|
+|116| Komal| 50|Operations|65000|2021-05-19 00:00:00|  7|
+|112|Anjali| 40|     Sales|62000|2020-12-05 00:00:00|  8|
+|114| Meena| 40|     Sales|62000|2023-01-30 00:00:00|  8|
+|106| Swati| 20|        HR|60000|2021-08-15 00:00:00|  9|
+|115|Sachin| 50|Operations|60000|2020-03-14 00:00:00|  9|
+
+df1=df.drop("did","dept","hire_date")
+df1.show()
+
+win_spec=Window.partitionBy(lit(1)).orderBy(desc("sal"))
+df2=df1.withColumn("prev_sal",lag("sal",1,0).over(win_spec))
+df2.show()
+
++---+------+-----+--------+
+|eid| ename|  sal|prev_sal|
++---+------+-----+--------+
+|109| Akash|82000|       0|
+|110| Sneha|78000|   82000|
+|108| Pooja|75000|   78000|
+|102| Rohan|72000|   75000|
+
+win_spec=Window.partitionBy(lit(1)).orderBy(desc("sal"))
+df2=df1.withColumn("next_sal",lead("sal",1,0).over(win_spec))
+df2.show()
+
++---+------+-----+--------+
+|eid| ename|  sal|next_sal|
++---+------+-----+--------+
+|109| Akash|82000|   78000|
+|110| Sneha|78000|   75000|
+|108| Pooja|75000|   72000|
+|102| Rohan|72000|   72000|
+|104| Priya|72000|   70000|
+|117|Deepak|70000|   70000|
+|118|Shweta|70000|   68000|
+|103|  Neha|68000|   65000|
+|101|  Amit|65000|   65000|
+|116| Komal|65000|   62000|
+|112|Anjali|62000|   62000|
+|114| Meena|62000|   60000|
+|106| Swati|60000|   60000|
+|115|Sachin|60000|   58000|
+|107| Manoj|58000|   58000|
+|113| Rahul|58000|   55000|
+|105| Karan|55000|   50000|
+|111| Vikas|50000|       0|
++---+------+-----+--------+
+
+
+#Date Functions-
+timestamp 
+
+>>> df.printSchema()
+root
+ |-- eid: integer (nullable = true)
+ |-- ename: string (nullable = true)
+ |-- did: integer (nullable = true)
+ |-- dept: string (nullable = true)
+ |-- sal: integer (nullable = true)
+ |-- hire_date: timestamp (nullable = true)
+
+YYYY-MM-DD HH:mm:S
+
+df.show()
+
+df1=df.withColumn("today",current_date())
+df1.show()
+
++---+------+---+----------+-----+-------------------+----------+
+|eid| ename|did|      dept|  sal|          hire_date|     today|
++---+------+---+----------+-----+-------------------+----------+
+|101|  Amit| 10|        IT|65000|2020-01-15 00:00:00|2026-09-19|
+|102| Rohan| 10|        IT|72000|2021-03-10 00:00:00|2026-09-19|
+|103|  Neha| 10|        IT|68000|2022-06-20 00:00:00|2026-09-19|
+
+df1=df.withColumn("today",current_timestamp())
+df1.show(5,False)
++---+-----+---+----+-----+-------------------+-----------------------+
+|eid|ename|did|dept|sal  |hire_date          |today                  |
++---+-----+---+----+-----+-------------------+-----------------------+
+|101|Amit |10 |IT  |65000|2020-01-15 00:00:00|2026-09-19 10:34:28.865|
+|102|Rohan|10 |IT  |72000|2021-03-10 00:00:00|2026-09-19 10:34:28.865|
+
+
+df2=df1.withColumn("yr",year("today")).select("eid","today","yr")
+df2.show()
+
++---+--------------------+----+
+|eid|               today|  yr|
++---+--------------------+----+
+|101|2026-09-19 10:41:...|2026|
+|102|2026-09-19 10:41:...|2026|
+|103|2026-09-19 10:41:...|2026|
+
+df2=df1.withColumn("mnt",month("today")).select("eid","today","mnt")
+df2.show()
+
++---+--------------------+---+
+|eid|               today|mnt|
++---+--------------------+---+
+|101|2026-09-19 10:41:...|  9|
+|102|2026-09-19 10:41:...|  9|
+
+df2=df1.withColumn("day",dayofmonth("today")).select("eid","today","day")
+df2.show()
++---+--------------------+---+
+|eid|               today|day|
++---+--------------------+---+
+|101|2026-09-19 10:42:...| 19|
+|102|2026-09-19 10:42:...| 19|
+|103|2026-09-19 10:42:...| 19|
+
+df2=df1.withColumn("hr",hour("today")).select("eid","today","hr")
+df2.show()
++---+--------------------+---+
+|eid|               today| hr|
++---+--------------------+---+
+|101|2026-09-19 10:42:...| 10|
+|102|2026-09-19 10:42:...| 10|
+
+df2=df1.withColumn("min",minute("today")).select("eid","today","min")
+df2.show()
++---+--------------------+---+
+|eid|               today|min|
++---+--------------------+---+
+|101|2026-09-19 10:43:...| 43|
+|102|2026-09-19 10:43:...| 43|
+
+df2=df1.withColumn("sec",second("today")).select("eid","today","sec")
+df2.show()
++---+--------------------+---+
+|eid|               today|sec|
++---+--------------------+---+
+|101|2026-09-19 10:43:...| 37|
+|102|2026-09-19 10:43:...| 37|
+|103|2026-09-19 10:43:...| 37|
+
+df2=df1.withColumn("day",dayname("today")).select("eid","today","day")
+df2.show()
+
++---+--------------------+---+
+|eid|               today|day|
++---+--------------------+---+
+|101|2026-09-19 10:44:...|  7|
+|102|2026-09-19 10:44:...|  7|
+
+df2=df1.withColumn("day",last_day("today")).select("eid","today","day")
+df2.show()
+
++---+--------------------+----------+
+|eid|               today|       day|
++---+--------------------+----------+
+|101|2026-09-19 10:45:...|2026-09-30|
+|102|2026-09-19 10:45:...|2026-09-30|
+|103|2026-09-19 10:45:...|2026-09-30|
+
+
+df2=df1.withColumn("diff",datediff("today","hire_date"))
+df2.show()
++---+------+---+----------+-----+-------------------+--------------------+----+
+|eid| ename|did|      dept|  sal|          hire_date|               today|diff|
++---+------+---+----------+-----+-------------------+--------------------+----+
+|101|  Amit| 10|        IT|65000|2020-01-15 00:00:00|2026-09-19 10:52:...|2439|
+|102| Rohan| 10|        IT|72000|2021-03-10 00:00:00|2026-09-19 10:52:...|2019|
+
+#date_add
+df2=df1.withColumn("new_date",date_add("hire_date",7)).select("eid","hire_date","new_date")
+df2.show()
++---+-------------------+----------+
+|eid|          hire_date|  new_date|
++---+-------------------+----------+
+|101|2020-01-15 00:00:00|2020-01-22|
+|102|2021-03-10 00:00:00|2021-03-17|
+|103|2022-06-20 00:00:00|2022-06-27|
+
+
+#date_sub
+df2=df1.withColumn("new_date",date_sub("hire_date",7)).select("eid","hire_date","new_date")
+df2.show()
+
++---+-------------------+----------+
+|eid|          hire_date|  new_date|
++---+-------------------+----------+
+|101|2020-01-15 00:00:00|2020-01-08|
+|102|2021-03-10 00:00:00|2021-03-03|
+|103|2022-06-20 00:00:00|2022-06-13|
+|104|2023-02-12 00:00:00|2023-02-05|
+
+
+df=spark.read.format("CSV").option("header","true").option("inferschema","true").load("D:/tmp/emp.csv")
+
+df.show()
+
+df1=df.where(df['sal']>65000)
+df1.show()
+
+df1.write.format("CSV").option("header","true").save("D:/tmp/spop")
+
+#Mode
+1.append
+
+df1.write.format("CSV").mode('append').option("header","true").save("D:/tmp/spop")
+
+
+2.overwrite
+
+df1.write.format("CSV").mode('overwrite').option("header","true").save("D:/tmp/spop")
+
+
+#PARQUET Read/Write
+
+df=spark.read.format("CSV").option("header","true").option("inferschema","true").load("D:/tmp/emp.csv")
+
+df.show()
+
+df1=df.where(df['sal']>65000)
+df1.show()
+
+df1.write.format("PARQUET").save("D:/tmp/emp_pq")
+
+-------------------
+#read from Parquet and Write into ORC - 
+
+df=spark.read.format("PARQUET").load("D:/tmp/emp_pq/*.parquet")
+
+df.show()
+
+df.write.format("ORC").save("D:/tmp/emp_orc")
+
+------------------------------------------
+
+#read from ORC and write into JSON 
+
+df=spark.read.format("ORC").load("D:/tmp/emp_orc/*.orc")
+
+df.write.format("JSON").save("D:/tmp/emp_json")
+
+==============================================================
+#JSON Data Processing - 
+
+std.json
+
+{"roll":1,"name":"karan"}
+
+{"roll":1,"name":"karan","marks":{"marathi":89,"Hindi":78,"English":88},"status":true,"mob":[12345,54321]}
+
+
+{
+"roll":1,
+"name":"karan",
+"marks":{"marathi":89,"Hindi":78,"English":88},
+"status":true,
+"mob":[12345,54321]
+}
+
+
+
+emp.json
+{"eid":101,"ename":"Amit","sal":65000}
+{"eid":102,"ename":"Rohan","city":"Pune"}
+{"eid":103,"ename":"Neha"}
+{"eid":104,"ename":"Priya","mob":12345}
+{"eid":105,"ename":"Karan","status":"Active"}
+
+
+df=spark.read.format("JSON").load("D:/tmp/emp.json")
+
+df.show()
+
++----+---+-----+-----+-----+------+
+|city|eid|ename|  mob|  sal|status|
++----+---+-----+-----+-----+------+
+|null|101| Amit| null|65000|  null|
+|Pune|102|Rohan| null| null|  null|
+|null|103| Neha| null| null|  null|
+|null|104|Priya|12345| null|  null|
+|null|105|Karan| null| null|Active|
++----+---+-----+-----+-----+------+
+
+df1=df.withColumn("today",current_date())
+df1.show()
++----+---+-----+-----+-----+------+----------+
+|city|eid|ename|  mob|  sal|status|     today|
++----+---+-----+-----+-----+------+----------+
+|null|101| Amit| null|65000|  null|2026-09-19|
+|Pune|102|Rohan| null| null|  null|2026-09-19|
+|null|103| Neha| null| null|  null|2026-09-19|
+|null|104|Priya|12345| null|  null|2026-09-19|
+|null|105|Karan| null| null|Active|2026-09-19|
++----+---+-----+-----+-----+------+----------+
+
+
+
+#JSON
+#RDBMS
+#HIve
+#HDFS/S3
+#CSV without header 
+
